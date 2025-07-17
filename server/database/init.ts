@@ -1,14 +1,107 @@
 import sqlite3 from 'sqlite3';
 import { join } from 'path';
 
-// For Vercel deployment, use a simple path resolution
-const dbPath = process.env.NODE_ENV === 'production' 
-  ? '/tmp/database.sqlite' 
-  : join(process.cwd(), 'database.sqlite');
+// Mock database for production deployment
+const createMockDatabase = () => {
+  const mockData = {
+    merge_requests: [
+      {
+        id: 1,
+        project_id: 1,
+        gitlab_mr_id: 1,
+        title: "Sample Merge Request",
+        description: "This is a sample merge request for testing",
+        source_branch: "feature/test",
+        target_branch: "main", 
+        author_username: "testuser",
+        state: "opened",
+        web_url: "https://gitlab.com/test/project/-/merge_requests/1",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        project_name: "Test Project",
+        namespace: "test-namespace"
+      }
+    ]
+  };
 
-export const db = new sqlite3.Database(dbPath);
+  return {
+    all: (sql: string, params: unknown[] = [], callback?: (err: Error | null, rows: unknown[]) => void) => {
+      setTimeout(() => {
+        try {
+          if (sql.includes('COUNT(*)') && sql.includes('merge_requests')) {
+            const stats = {
+              total_mrs: 1,
+              open_mrs: 1,
+              merged_mrs: 0,
+              closed_mrs: 0
+            };
+            callback?.(null, [stats]);
+          } else if (sql.includes('COUNT(*)') && sql.includes('ai_reviews')) {
+            const reviewStats = {
+              total_reviews: 0,
+              completed_reviews: 0,
+              pending_reviews: 0,
+              failed_reviews: 0,
+              avg_score: 0
+            };
+            callback?.(null, [reviewStats]);
+          } else if (sql.includes('FROM merge_requests')) {
+            callback?.(null, mockData.merge_requests);
+          } else {
+            callback?.(null, []);
+          }
+        } catch (error) {
+          callback?.(error as Error, []);
+        }
+      }, 10);
+    },
+    
+    get: (sql: string, params: unknown[] = [], callback?: (err: Error | null, row: unknown) => void) => {
+      setTimeout(() => {
+        try {
+          if (sql.includes('FROM merge_requests')) {
+            callback?.(null, mockData.merge_requests[0]);
+          } else {
+            callback?.(null, null);
+          }
+        } catch (error) {
+          callback?.(error as Error, null);
+        }
+      }, 10);
+    },
+    
+    run: (sql: string, params: unknown[] = [], callback?: (err: Error | null) => void) => {
+      setTimeout(() => {
+        callback?.(null);
+      }, 10);
+    },
+    
+    serialize: (callback: () => void) => {
+      callback();
+    }
+  };
+};
+
+// Create database instance based on environment
+export const db = process.env.NODE_ENV === 'production' 
+  ? {
+      ...createMockDatabase(),
+      on: (event: string, callback: (error: Error) => void) => {
+        // Mock event handler - do nothing in production
+      },
+      close: (callback?: (error: Error | null) => void) => {
+        // Mock close - do nothing in production
+        callback?.(null);
+      }
+    }
+  : new sqlite3.Database(join(process.cwd(), 'database.sqlite'));
 
 export const initDatabase = async (): Promise<void> => {
+  if (process.env.NODE_ENV === 'production') {
+    console.log('Using mock database for production');
+    return Promise.resolve();
+  }
+  
   return new Promise((resolve, reject) => {
     db.serialize(() => {
       // Projects table
@@ -127,8 +220,13 @@ export const initDatabase = async (): Promise<void> => {
 };
 
 export const closeDatabase = (): Promise<void> => {
+  if (process.env.NODE_ENV === 'production') {
+    console.log('✅ Mock database connection closed');
+    return Promise.resolve();
+  }
+  
   return new Promise((resolve, reject) => {
-    db.close((error) => {
+    (db as any).close((error: Error | null) => {
       if (error) {
         reject(error);
       } else {
