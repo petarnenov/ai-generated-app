@@ -2,11 +2,12 @@
 	"version": 2,
 	"buildCommand": "npm run vercel-build",
 	"installCommand": "npm ci --legacy-peer-deps",
-	"functions": {
-		"api/index.ts": {
-			"runtime": "@vercel/node"
+	"builds": [
+		{
+			"src": "api/index.ts",
+			"use": "@vercel/node@3.0.0"
 		}
-	},
+	],
 	"routes": [
 		{
 			"src": "/api/(.*)",
