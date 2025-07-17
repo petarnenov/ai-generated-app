@@ -1,5 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
+// Environment variables for GitLab integration
+const GITLAB_URL = process.env.GITLAB_URL || 'https://gitlab.com';
+const GITLAB_TOKEN = process.env.GITLAB_TOKEN;
+
 module.exports = async function handler(req: VercelRequest, res: VercelResponse) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -15,7 +19,8 @@ module.exports = async function handler(req: VercelRequest, res: VercelResponse)
     console.log('API Request received:', {
       method: req.method,
       url: req.url,
-      query: req.query
+      query: req.query,
+      gitlabConfigured: !!GITLAB_TOKEN
     });
 
     const { url, method } = req;
@@ -86,7 +91,10 @@ module.exports = async function handler(req: VercelRequest, res: VercelResponse)
           avg_score: mockDatabase.ai_reviews.length > 0 
             ? mockDatabase.ai_reviews.reduce((sum, r) => sum + (r.score || 0), 0) / mockDatabase.ai_reviews.length 
             : 0
-        }
+        },
+        data_source: GITLAB_TOKEN ? 'gitlab_ready' : 'mock',
+        gitlab_configured: !!GITLAB_TOKEN,
+        gitlab_url: GITLAB_URL
       };
       
       console.log('Returning stats:', stats);
