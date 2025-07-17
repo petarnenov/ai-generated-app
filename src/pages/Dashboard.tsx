@@ -63,14 +63,51 @@ export const Dashboard: React.FC = () => {
       if (statsResponse.ok) {
         const statsData = await statsResponse.json();
         setStats(statsData);
+      } else {
+        // Fallback stats data when API is not available
+        setStats({
+          merge_requests: {
+            total_mrs: 0,
+            open_mrs: 0,
+            merged_mrs: 0,
+            closed_mrs: 0,
+          },
+          reviews: {
+            total_reviews: 0,
+            completed_reviews: 0,
+            pending_reviews: 0,
+            failed_reviews: 0,
+            avg_score: 0,
+          },
+        });
       }
 
       if (activityResponse.ok) {
         const activityData = await activityResponse.json();
         setRecentActivity(activityData.merge_requests || []);
+      } else {
+        // Fallback activity data
+        setRecentActivity([]);
       }
     } catch (error) {
       console.error("Failed to load dashboard data:", error);
+      // Set fallback data
+      setStats({
+        merge_requests: {
+          total_mrs: 0,
+          open_mrs: 0,
+          merged_mrs: 0,
+          closed_mrs: 0,
+        },
+        reviews: {
+          total_reviews: 0,
+          completed_reviews: 0,
+          pending_reviews: 0,
+          failed_reviews: 0,
+          avg_score: 0,
+        },
+      });
+      setRecentActivity([]);
     } finally {
       setLoading(false);
     }

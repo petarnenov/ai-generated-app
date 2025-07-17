@@ -1,10 +1,108 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { Pool } from 'pg';
 
-// Environment variables for GitLab integration
+// TypeScript interfaces
+interface MergeRequest {
+  id: number;
+  title: string;
+  state: 'opened' | 'merged' | 'closed';
+  author: string;
+  created_at: string;
+  updated_at: string;
+  target_branch: string;
+  source_branch: string;
+  description?: string;
+  project_id?: number;
+}
+
+interface Review {
+  id: number;
+  merge_request_id: number;
+  status: 'pending' | 'completed' | 'failed';
+  score?: number;
+  feedback?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Environment variables
 const GITLAB_URL = process.env.GITLAB_URL || 'https://gitlab.com';
 const GITLAB_TOKEN = process.env.GITLAB_TOKEN;
+const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://postgres:7103041524Kanatunta$@db.pphxnusfobkgkyvrkrku.supabase.co:5432/postgres';
 
-module.exports = async function handler(req: VercelRequest, res: VercelResponse) {
+// Initialize PostgreSQL pool
+const pool = new Pool({
+  connectionString: DATABASE_URL,
+  ssl: DATABASE_URL.includes('supabase.co') ? { rejectUnauthorized: false } : false
+});
+
+// Database helper functions
+async function getMergeRequestsFromDB(): Promise<MergeRequest[]> {
+  try {
+    const client = await pool.connect();
+    try {
+      const result = await client.query(`
+        SELECT 
+          mr.*,
+          p.name as project_name,
+          p.web_url as project_web_url
+        FROM merge_requests mr
+        LEFT JOIN projects p ON mr.project_id = p.id
+        ORDER BY mr.updated_at DESC
+        LIMIT 50
+      `);
+      
+      return result.rows.map(row => ({
+        id: row.id,
+        title: row.title,
+        state: row.state,
+        author: row.author,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+        target_branch: row.target_branch,
+        source_branch: row.source_branch,
+        description: row.description,
+        project_id: row.project_id
+      }));
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('Database connection error:', error);
+    return [];
+  }
+}
+
+async function getReviewsFromDB(): Promise<Review[]> {
+  try {
+    const client = await pool.connect();
+    try {
+      const result = await client.query(`
+        SELECT *
+        FROM ai_reviews
+        ORDER BY created_at DESC
+        LIMIT 100
+      `);
+      
+      return result.rows.map(row => ({
+        id: row.id,
+        merge_request_id: row.merge_request_id,
+        status: row.status,
+        score: row.score,
+        feedback: row.feedback,
+        created_at: row.created_at,
+        updated_at: row.updated_at
+      }));
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('Database connection error:', error);
+    return [];
+  }
+}
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -30,69 +128,32 @@ module.exports = async function handler(req: VercelRequest, res: VercelResponse)
     
     console.log(`Processing: ${method} ${path}`);
 
-    // Mock database
-    const mockDatabase = {
-      merge_requests: [
-        {
-          id: 1,
-          project_id: 1,
-          gitlab_mr_id: 1,
-          title: "Sample Merge Request",
-          description: "This is a sample merge request for testing",
-          source_branch: "feature/test",
-          target_branch: "main",
-          author_username: "testuser",
-          state: "opened",
-          web_url: "https://gitlab.com/test/project/-/merge_requests/1",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          project_name: "Test Project",
-          namespace: "test-namespace",
-          project_url: "https://gitlab.com/test/project"
-        }
-      ],
-      
-      ai_reviews: [
-        {
-          id: 1,
-          merge_request_id: 1,
-          provider: "openai",
-          model: "gpt-4",
-          review_data: JSON.stringify({
-            summary: "This is a test review",
-            suggestions: ["Test suggestion 1", "Test suggestion 2"],
-            score: 85
-          }),
-          score: 85,
-          status: "completed",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      ]
-    };
-
     // Handle different API endpoints
     if (path === '/pr/stats/summary' || path.startsWith('/pr/stats/summary')) {
       console.log('Handling stats request');
       
+      // Get data from Supabase
+      const mergeRequests = await getMergeRequestsFromDB();
+      const reviews = await getReviewsFromDB();
+      
       // Statistics endpoint
       const stats = {
         merge_requests: {
-          total_mrs: mockDatabase.merge_requests.length,
-          open_mrs: mockDatabase.merge_requests.filter(mr => mr.state === 'opened').length,
-          merged_mrs: mockDatabase.merge_requests.filter(mr => mr.state === 'merged').length,
-          closed_mrs: mockDatabase.merge_requests.filter(mr => mr.state === 'closed').length
+          total_mrs: mergeRequests.length,
+          open_mrs: mergeRequests.filter((mr: MergeRequest) => mr.state === 'opened').length,
+          merged_mrs: mergeRequests.filter((mr: MergeRequest) => mr.state === 'merged').length,
+          closed_mrs: mergeRequests.filter((mr: MergeRequest) => mr.state === 'closed').length
         },
         reviews: {
-          total_reviews: mockDatabase.ai_reviews.length,
-          completed_reviews: mockDatabase.ai_reviews.filter(r => r.status === 'completed').length,
-          pending_reviews: mockDatabase.ai_reviews.filter(r => r.status === 'pending').length,
-          failed_reviews: mockDatabase.ai_reviews.filter(r => r.status === 'failed').length,
-          avg_score: mockDatabase.ai_reviews.length > 0 
-            ? mockDatabase.ai_reviews.reduce((sum, r) => sum + (r.score || 0), 0) / mockDatabase.ai_reviews.length 
+          total_reviews: reviews.length,
+          completed_reviews: reviews.filter((r: Review) => r.status === 'completed').length,
+          pending_reviews: reviews.filter((r: Review) => r.status === 'pending').length,
+          failed_reviews: reviews.filter((r: Review) => r.status === 'failed').length,
+          avg_score: reviews.length > 0 
+            ? reviews.reduce((sum: number, r: Review) => sum + (r.score || 0), 0) / reviews.length 
             : 0
         },
-        data_source: GITLAB_TOKEN ? 'gitlab_ready' : 'mock',
+        data_source: 'postgresql_direct',
         gitlab_configured: !!GITLAB_TOKEN,
         gitlab_url: GITLAB_URL
       };
@@ -108,10 +169,11 @@ module.exports = async function handler(req: VercelRequest, res: VercelResponse)
       // Merge requests endpoint
       const { per_page = '20', state } = req.query;
       
-      let results = [...mockDatabase.merge_requests];
+      // Get merge requests from Supabase
+      let results = await getMergeRequestsFromDB();
       
       if (state && state !== 'all') {
-        results = results.filter(mr => mr.state === state);
+        results = results.filter((mr: MergeRequest) => mr.state === state);
       }
       
       // Apply pagination
@@ -119,7 +181,10 @@ module.exports = async function handler(req: VercelRequest, res: VercelResponse)
       results = results.slice(0, limit);
       
       console.log('Returning merge requests:', results.length);
-      res.status(200).json({ merge_requests: results });
+      res.status(200).json({ 
+        merge_requests: results,
+        data_source: 'postgresql_direct'
+      });
       return;
     }
     
