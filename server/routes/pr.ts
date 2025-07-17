@@ -1,7 +1,7 @@
 import express from 'express';
 import axios from 'axios';
-import { db } from '../database/init';
-import { asyncHandler, createError } from '../middleware/errorHandler';
+import { db } from '../database/init.js';
+import { asyncHandler, createError } from '../middleware/errorHandler.js';
 
 interface GitLabChange {
   old_path: string;
@@ -179,9 +179,13 @@ router.post('/:id/review', asyncHandler(async (req, res) => {
       `INSERT INTO ai_reviews (merge_request_id, review_type, ai_provider, ai_model, status)
        VALUES (?, ?, ?, ?, ?)`,
       [mrId, review_type, 'openai', 'gpt-4', 'pending'],
-      function(err) {
+      function(err: Error | null) {
         if (err) return reject(err);
-        resolve(this.lastID);
+        // Get the last inserted row ID
+        db.get('SELECT last_insert_rowid() as id', [], (err: Error | null, row: any) => {
+          if (err) return reject(err);
+          resolve(row.id);
+        });
       }
     );
   });
@@ -528,7 +532,16 @@ router.delete('/:id/review/:reviewId', asyncHandler(async (req, res) => {
     return;
   }
   
-  // Delete the review
+  // First delete all review comments that reference this review
+  await new Promise<void>((resolve, reject) => {
+    db.run(
+      'DELETE FROM review_comments WHERE ai_review_id = ?',
+      [reviewId],
+      (err) => err ? reject(err) : resolve()
+    );
+  });
+  
+  // Then delete the review
   await new Promise<void>((resolve, reject) => {
     db.run(
       'DELETE FROM ai_reviews WHERE id = ? AND merge_request_id = ?',
@@ -552,6 +565,7 @@ router.get('/stats/summary', asyncHandler(async (req, res) => {
         SUM(CASE WHEN state = 'merged' THEN 1 ELSE 0 END) as merged_mrs,
         SUM(CASE WHEN state = 'closed' THEN 1 ELSE 0 END) as closed_mrs
        FROM merge_requests`,
+      [],
       (err, rows) => {
         if (err) return reject(err);
         resolve(rows[0]);
@@ -568,6 +582,7 @@ router.get('/stats/summary', asyncHandler(async (req, res) => {
         SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed_reviews,
         AVG(score) as avg_score
        FROM ai_reviews`,
+      [],
       (err, rows) => {
         if (err) return reject(err);
         resolve(rows[0]);
