@@ -42,7 +42,7 @@ router.get('/config', asyncHandler(async (req, res) => {
   db.all(
     'SELECT key, value FROM settings WHERE key IN (?, ?)',
     ['gitlab_url', 'gitlab_token'],
-    (err, rows) => {
+    (err, rows: any[]) => {
       if (err) {
         throw createError(500, 'Failed to fetch GitLab configuration');
       }
@@ -344,7 +344,13 @@ router.post('/sync-all', asyncHandler(async (req, res) => {
     throw createError(400, 'GitLab not configured');
   }
   
-  const results = [];
+  const results: Array<{
+    project_id: any;
+    project_name: any;
+    synced_count: number;
+    status: string;
+    error?: string;
+  }> = [];
   
   // Sync each project
   for (const project of projects) {
