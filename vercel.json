@@ -1,8 +1,13 @@
 {
 	"version": 2,
-	"buildCommand": "npm run vercel-build",
-	"installCommand": "npm ci --legacy-peer-deps",
 	"builds": [
+		{
+			"src": "package.json",
+			"use": "@vercel/static-build",
+			"config": {
+				"distDir": "dist"
+			}
+		},
 		{
 			"src": "api/index.ts",
 			"use": "@vercel/node"
@@ -20,6 +25,5 @@
 			"src": "/(.*)",
 			"dest": "/index.html"
 		}
-	],
-	"outputDirectory": "dist"
+	]
 }

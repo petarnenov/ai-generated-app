@@ -17,6 +17,7 @@
     "preview": "vite preview",
     "start": "node dist/server/index.js",
     "vercel-build": "tsc -b && vite build --mode production",
+    "vercel-install": "npm ci --legacy-peer-deps",
     "migrate": "tsx scripts/migrate.ts"
   },
   "dependencies": {
