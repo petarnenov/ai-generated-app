@@ -45,9 +45,19 @@ export const Dashboard: React.FC = () => {
 
   const loadDashboardData = async () => {
     try {
+      console.log("Loading dashboard data...");
       const [statsResponse, activityResponse] = await Promise.all([
-        fetch("/api/pr/stats/summary"),
-        fetch("/api/pr?per_page=10"),
+        fetch("/api/pr/stats/summary").catch((err) => {
+          console.error("Stats API error:", err);
+          return { ok: false, json: () => Promise.resolve(null) };
+        }),
+        fetch("/api/pr?per_page=10").catch((err) => {
+          console.error("Activity API error:", err);
+          return {
+            ok: false,
+            json: () => Promise.resolve({ merge_requests: [] }),
+          };
+        }),
       ]);
 
       if (statsResponse.ok) {

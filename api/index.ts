@@ -2,10 +2,10 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import prRoutes from '../server/routes/pr.js';
-import gitlabRoutes from '../server/routes/gitlab.js';
-import aiRoutes from '../server/routes/ai.js';
-import { errorHandler } from '../server/middleware/errorHandler.js';
+import prRoutes from '../server/routes/pr';
+import gitlabRoutes from '../server/routes/gitlab';
+import aiRoutes from '../server/routes/ai';
+import { errorHandler } from '../server/middleware/errorHandler';
 
 const app = express();
 

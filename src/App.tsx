@@ -5,6 +5,7 @@ import { Projects } from "./pages/Projects";
 import { MergeRequests } from "./pages/MergeRequests";
 import { Settings } from "./pages/Settings";
 import { MergeRequestDetail } from "./pages/MergeRequestDetail";
+import { TestPage } from "./pages/TestPage";
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
       <Layout>
         <Routes>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/test" element={<TestPage />} />
           <Route path="/projects" element={<Projects />} />
           <Route path="/merge-requests" element={<MergeRequests />} />
           <Route path="/merge-requests/:id" element={<MergeRequestDetail />} />

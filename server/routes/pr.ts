@@ -1,7 +1,7 @@
 import express from 'express';
 import axios from 'axios';
-import { db } from '../database/init.js';
-import { asyncHandler, createError } from '../middleware/errorHandler.js';
+import { db } from '../database/init';
+import { asyncHandler, createError } from '../middleware/errorHandler';
 
 interface GitLabChange {
   old_path: string;
