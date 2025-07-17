@@ -1,8 +1,90 @@
 import sqlite3 from 'sqlite3';
 import { join } from 'path';
+import { SQLiteCloudDatabase } from './sqlitecloud.js';
 
-// Mock database for production deployment
-const createMockDatabase = () => {
+// Database interface for compatibility
+export interface DatabaseInterface {
+  all(sql: string, params?: unknown[], callback?: (err: Error | null, rows: unknown[]) => void): void | Promise<unknown[]>;
+  get(sql: string, params?: unknown[], callback?: (err: Error | null, row: unknown) => void): void | Promise<unknown | null>;
+  run(sql: string, params?: unknown[], callback?: (err: Error | null) => void): void | Promise<void>;
+  serialize(callback: () => void): void;
+  on?(event: string, callback: (error: Error) => void): void;
+  close?(callback?: (error: Error | null) => void): void;
+}
+
+// Wrapper class to provide sqlite3-compatible interface for SQLiteCloud
+class SQLiteCloudWrapper implements DatabaseInterface {
+  private cloudDb: SQLiteCloudDatabase;
+
+  constructor(connectionString: string) {
+    this.cloudDb = new SQLiteCloudDatabase(connectionString);
+  }
+
+  async connect(): Promise<void> {
+    await this.cloudDb.connect();
+  }
+
+  async disconnect(): Promise<void> {
+    await this.cloudDb.disconnect();
+  }
+
+  all(sql: string, params: unknown[] = [], callback?: (err: Error | null, rows: unknown[]) => void): void | Promise<unknown[]> {
+    if (callback) {
+      // Callback-style (sqlite3 compatibility)
+      this.cloudDb.all(sql, params)
+        .then(rows => callback(null, rows))
+        .catch(error => callback(error as Error, []));
+    } else {
+      // Promise-style
+      return this.cloudDb.all(sql, params);
+    }
+  }
+
+  get(sql: string, params: unknown[] = [], callback?: (err: Error | null, row: unknown) => void): void | Promise<unknown | null> {
+    if (callback) {
+      // Callback-style (sqlite3 compatibility)
+      this.cloudDb.get(sql, params)
+        .then(row => callback(null, row))
+        .catch(error => callback(error as Error, null));
+    } else {
+      // Promise-style
+      return this.cloudDb.get(sql, params);
+    }
+  }
+
+  run(sql: string, params: unknown[] = [], callback?: (err: Error | null) => void): void | Promise<void> {
+    if (callback) {
+      // Callback-style (sqlite3 compatibility)
+      this.cloudDb.run(sql, params)
+        .then(() => callback(null))
+        .catch(error => callback(error as Error));
+    } else {
+      // Promise-style
+      return this.cloudDb.run(sql, params);
+    }
+  }
+
+  serialize(callback: () => void): void {
+    // For SQLiteCloud, we don't need to serialize, just execute
+    callback();
+  }
+
+  // Mock event handler for compatibility
+  on(event: string, callback: (error: Error) => void): void {
+    // SQLiteCloud doesn't have event emitters like sqlite3
+    // This is just for compatibility
+  }
+
+  // Mock close for compatibility
+  close(callback?: (error: Error | null) => void): void {
+    this.cloudDb.disconnect()
+      .then(() => callback?.(null))
+      .catch(error => callback?.(error as Error));
+  }
+}
+
+// Mock database for fallback
+const createMockDatabase = (): DatabaseInterface => {
   const mockData = {
     merge_requests: [
       {
@@ -25,7 +107,7 @@ const createMockDatabase = () => {
   };
 
   return {
-    all: (sql: string, params: unknown[] = [], callback?: (err: Error | null, rows: unknown[]) => void) => {
+    all: (sql: string, _params: unknown[] = [], callback?: (err: Error | null, rows: unknown[]) => void) => {
       setTimeout(() => {
         try {
           if (sql.includes('COUNT(*)') && sql.includes('merge_requests')) {
@@ -56,7 +138,7 @@ const createMockDatabase = () => {
       }, 10);
     },
     
-    get: (sql: string, params: unknown[] = [], callback?: (err: Error | null, row: unknown) => void) => {
+    get: (sql: string, _params: unknown[] = [], callback?: (err: Error | null, row: unknown) => void) => {
       setTimeout(() => {
         try {
           if (sql.includes('FROM merge_requests')) {
@@ -70,7 +152,7 @@ const createMockDatabase = () => {
       }, 10);
     },
     
-    run: (sql: string, params: unknown[] = [], callback?: (err: Error | null) => void) => {
+    run: (sql: string, _params: unknown[] = [], callback?: (err: Error | null) => void) => {
       setTimeout(() => {
         callback?.(null);
       }, 10);
@@ -78,26 +160,91 @@ const createMockDatabase = () => {
     
     serialize: (callback: () => void) => {
       callback();
+    },
+
+    on: (_event: string, _callback: (error: Error) => void) => {
+      // Mock event handler - do nothing
+    },
+
+    close: (callback?: (error: Error | null) => void) => {
+      // Mock close - do nothing
+      callback?.(null);
     }
   };
 };
 
-// Create database instance based on environment
-export const db = process.env.NODE_ENV === 'production' 
-  ? {
-      ...createMockDatabase(),
-      on: (event: string, callback: (error: Error) => void) => {
-        // Mock event handler - do nothing in production
-      },
-      close: (callback?: (error: Error | null) => void) => {
-        // Mock close - do nothing in production
-        callback?.(null);
-      }
+// Wrapper for sqlite3 to make it compatible with our interface
+class SQLite3Wrapper implements DatabaseInterface {
+  private sqliteDb: sqlite3.Database;
+
+  constructor(filename: string) {
+    this.sqliteDb = new sqlite3.Database(filename);
+  }
+
+  all(sql: string, params: unknown[] = [], callback?: (err: Error | null, rows: unknown[]) => void): void {
+    if (callback) {
+      this.sqliteDb.all(sql, params, callback);
+    } else {
+      this.sqliteDb.all(sql, params);
     }
-  : new sqlite3.Database(join(process.cwd(), 'database.sqlite'));
+  }
+
+  get(sql: string, params: unknown[] = [], callback?: (err: Error | null, row: unknown) => void): void {
+    if (callback) {
+      this.sqliteDb.get(sql, params, callback);
+    } else {
+      this.sqliteDb.get(sql, params);
+    }
+  }
+
+  run(sql: string, params: unknown[] = [], callback?: (err: Error | null) => void): void {
+    if (callback) {
+      this.sqliteDb.run(sql, params, callback);
+    } else {
+      this.sqliteDb.run(sql, params);
+    }
+  }
+
+  serialize(callback: () => void): void {
+    this.sqliteDb.serialize(callback);
+  }
+
+  on(event: string, callback: (error: Error) => void): void {
+    this.sqliteDb.on(event, callback);
+  }
+
+  close(callback?: (error: Error | null) => void): void {
+    this.sqliteDb.close(callback);
+  }
+}
+
+// Create database instance based on configuration
+const createDatabase = (): DatabaseInterface => {
+  const sqliteCloudUrl = process.env.SQLITECLOUD_URL;
+  
+  if (sqliteCloudUrl) {
+    console.log('🌩️ Using SQLiteCloud database');
+    return new SQLiteCloudWrapper(sqliteCloudUrl);
+  } else if (process.env.NODE_ENV === 'production') {
+    console.log('📦 Using mock database for production (no SQLiteCloud URL provided)');
+    return createMockDatabase();
+  } else {
+    console.log('💾 Using local SQLite database for development');
+    return new SQLite3Wrapper(join(process.cwd(), 'database.sqlite'));
+  }
+};
+
+// Global database instance
+export const db = createDatabase();
 
 export const initDatabase = async (): Promise<void> => {
-  if (process.env.NODE_ENV === 'production') {
+  // Initialize cloud connection first
+  if (db instanceof SQLiteCloudWrapper) {
+    await db.connect();
+  }
+
+  // If using mock database, skip schema creation
+  if (process.env.NODE_ENV === 'production' && !process.env.SQLITECLOUD_URL) {
     console.log('Using mock database for production');
     return Promise.resolve();
   }
@@ -206,33 +353,50 @@ export const initDatabase = async (): Promise<void> => {
         ('review_min_score', '7', 'Minimum score to auto-approve'),
         ('review_max_files', '20', 'Maximum files to review per MR'),
         ('review_max_lines', '1000', 'Maximum lines to review per file')
-      `);
-
-      console.log('✅ Database initialized successfully');
-      resolve();
+      `, [], (err) => {
+        if (err) {
+          console.error('❌ Database initialization error:', err);
+          reject(err);
+        } else {
+          console.log('✅ Database initialized successfully');
+          resolve();
+        }
+      });
     });
 
-    db.on('error', (error) => {
-      console.error('❌ Database error:', error);
-      reject(error);
-    });
+    // Handle database errors
+    if (db.on) {
+      db.on('error', (error) => {
+        console.error('❌ Database error:', error);
+        reject(error);
+      });
+    }
   });
 };
 
-export const closeDatabase = (): Promise<void> => {
-  if (process.env.NODE_ENV === 'production') {
+export const closeDatabase = async (): Promise<void> => {
+  if (db instanceof SQLiteCloudWrapper) {
+    await db.disconnect();
+    return;
+  }
+  
+  if (process.env.NODE_ENV === 'production' && !process.env.SQLITECLOUD_URL) {
     console.log('✅ Mock database connection closed');
     return Promise.resolve();
   }
   
   return new Promise((resolve, reject) => {
-    (db as any).close((error: Error | null) => {
-      if (error) {
-        reject(error);
-      } else {
-        console.log('✅ Database connection closed');
-        resolve();
-      }
-    });
+    if (db.close) {
+      db.close((error: Error | null) => {
+        if (error) {
+          reject(error);
+        } else {
+          console.log('✅ Database connection closed');
+          resolve();
+        }
+      });
+    } else {
+      resolve();
+    }
   });
 };

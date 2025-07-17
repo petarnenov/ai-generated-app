@@ -1,7 +1,7 @@
 import express from 'express';
 import axios from 'axios';
-import { db } from '../database/init';
-import { asyncHandler, createError } from '../middleware/errorHandler';
+import { db } from '../database/init.js';
+import { asyncHandler, createError } from '../middleware/errorHandler.js';
 
 const router = express.Router();
 
@@ -210,6 +210,7 @@ router.post('/projects/:id/track', asyncHandler(async (req, res) => {
 router.get('/tracked-projects', asyncHandler(async (req, res) => {
   db.all(
     'SELECT * FROM projects ORDER BY updated_at DESC',
+    [],
     (err, rows) => {
       if (err) {
         throw createError(500, 'Failed to fetch tracked projects');
@@ -313,6 +314,7 @@ router.post('/sync-all', asyncHandler(async (req, res) => {
   const projects = await new Promise<any[]>((resolve, reject) => {
     db.all(
       'SELECT * FROM projects',
+      [],
       (err, rows) => {
         if (err) return reject(err);
         resolve(rows);

@@ -1,7 +1,7 @@
 import express from 'express';
 import axios from 'axios';
-import { db } from '../database/init';
-import { asyncHandler, createError } from '../middleware/errorHandler';
+import { db } from '../database/init.js';
+import { asyncHandler, createError } from '../middleware/errorHandler.js';
 
 const router = express.Router();
 
@@ -9,6 +9,7 @@ const router = express.Router();
 router.get('/config', asyncHandler(async (req, res) => {
   db.all(
     'SELECT key, value FROM settings WHERE key LIKE "%api_key" OR key LIKE "review_%"',
+    [],
     (err, rows) => {
       if (err) {
         throw createError(500, 'Failed to fetch AI configuration');
@@ -39,14 +40,29 @@ router.post('/config', asyncHandler(async (req, res) => {
     review_max_lines
   } = req.body;
   
-  const updates = [
-    { key: 'openai_api_key', value: (openai_api_key === null || openai_api_key === undefined) ? '' : openai_api_key },
-    { key: 'anthropic_api_key', value: (anthropic_api_key === null || anthropic_api_key === undefined) ? '' : anthropic_api_key },
-    { key: 'review_auto_post', value: (review_auto_post === null || review_auto_post === undefined) ? 'false' : String(review_auto_post) },
-    { key: 'review_min_score', value: (review_min_score === null || review_min_score === undefined) ? '0' : String(review_min_score) },
-    { key: 'review_max_files', value: (review_max_files === null || review_max_files === undefined) ? '10' : String(review_max_files) },
-    { key: 'review_max_lines', value: (review_max_lines === null || review_max_lines === undefined) ? '500' : String(review_max_lines) }
-  ];
+  const updates: { key: string; value: string }[] = [];
+  
+  // Only update API keys if they're provided (not undefined)
+  if (openai_api_key !== undefined) {
+    updates.push({ key: 'openai_api_key', value: openai_api_key || '' });
+  }
+  if (anthropic_api_key !== undefined) {
+    updates.push({ key: 'anthropic_api_key', value: anthropic_api_key || '' });
+  }
+  
+  // Only update review settings if they're provided (not undefined)
+  if (review_auto_post !== undefined) {
+    updates.push({ key: 'review_auto_post', value: (review_auto_post === null || review_auto_post === undefined) ? 'false' : String(review_auto_post) });
+  }
+  if (review_min_score !== undefined) {
+    updates.push({ key: 'review_min_score', value: (review_min_score === null || review_min_score === undefined) ? '0' : String(review_min_score) });
+  }
+  if (review_max_files !== undefined) {
+    updates.push({ key: 'review_max_files', value: (review_max_files === null || review_max_files === undefined) ? '10' : String(review_max_files) });
+  }
+  if (review_max_lines !== undefined) {
+    updates.push({ key: 'review_max_lines', value: (review_max_lines === null || review_max_lines === undefined) ? '500' : String(review_max_lines) });
+  }
   
   const updatePromises = updates.map(({ key, value }) => 
     new Promise((resolve, reject) => {

@@ -18,11 +18,15 @@
     "start": "node dist/server/index.js",
     "vercel-build": "vite build --mode production",
     "vercel-install": "npm ci --legacy-peer-deps",
-    "migrate": "tsx scripts/migrate.ts"
+    "migrate": "tsx scripts/migrate.ts",
+    "migrate:sqlitecloud": "tsx scripts/migrate-to-sqlitecloud.ts",
+    "test:cloud": "tsx test-cloud-connection.ts",
+    "test:docker": "./scripts/test-docker-sqlitecloud.sh"
   },
   "dependencies": {
     "@headlessui/react": "^2.0.0",
     "@heroicons/react": "^2.0.18",
+    "@sqlitecloud/drivers": "^1.0.507",
     "@types/pg": "^8.15.4",
     "@vercel/node": "^5.3.6",
     "axios": "^1.6.0",
@@ -35,6 +39,7 @@
     "jsonwebtoken": "^9.0.2",
     "lucide-react": "^0.263.1",
     "morgan": "^1.10.0",
+    "openai": "^5.10.1",
     "pg": "^8.16.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

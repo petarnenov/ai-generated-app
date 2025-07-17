@@ -131,10 +131,14 @@ export const Settings: React.FC = () => {
         });
         loadConfigurations();
       } else {
-        const error = await response.json();
+        const errorResponse = await response.json();
+        const errorMessage =
+          errorResponse.error?.message ||
+          errorResponse.message ||
+          "Failed to save configuration";
         setMessage({
           type: "error",
-          text: error.message || "Failed to save configuration",
+          text: String(errorMessage),
         });
       }
     } catch {
@@ -144,16 +148,82 @@ export const Settings: React.FC = () => {
     }
   };
 
-  const saveAIConfig = async (e: React.FormEvent) => {
+  const saveAPIKeysConfig = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
 
     const formData = new FormData(e.target as HTMLFormElement);
+    const openaiKey = formData.get("openai_api_key") as string;
+    const anthropicKey = formData.get("anthropic_api_key") as string;
+
+    // Create config object with only API keys if they are provided
+    const config: Record<string, string> = {};
+
+    // Only include API keys if they have values (user entered something)
+    if (openaiKey && openaiKey.trim() !== "") {
+      config.openai_api_key = openaiKey;
+    }
+    if (anthropicKey && anthropicKey.trim() !== "") {
+      config.anthropic_api_key = anthropicKey;
+    }
+
+    // If no API keys were provided, show a message
+    if (Object.keys(config).length === 0) {
+      setMessage({
+        type: "error",
+        text: "Please enter at least one API key to save",
+      });
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/ai/config", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(config),
+      });
+
+      if (response.ok) {
+        setMessage({
+          type: "success",
+          text: "AI API keys saved successfully",
+        });
+        loadConfigurations();
+      } else {
+        const errorResponse = await response.json();
+        const errorMessage =
+          errorResponse.error?.message ||
+          errorResponse.message ||
+          "Failed to save API keys";
+        setMessage({
+          type: "error",
+          text: String(errorMessage),
+        });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Failed to save API keys" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveReviewConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage(null);
+
+    const formData = new FormData(e.target as HTMLFormElement);
+
+    // Handle checkbox properly - if not checked, it won't be in FormData
+    const reviewAutoPost =
+      formData.get("review_auto_post") === "true" ? "true" : "false";
+
     const config = {
-      openai_api_key: formData.get("openai_api_key") as string,
-      anthropic_api_key: formData.get("anthropic_api_key") as string,
-      review_auto_post: formData.get("review_auto_post") as string,
+      review_auto_post: reviewAutoPost,
       review_min_score: formData.get("review_min_score") as string,
       review_max_files: formData.get("review_max_files") as string,
       review_max_lines: formData.get("review_max_lines") as string,
@@ -171,18 +241,22 @@ export const Settings: React.FC = () => {
       if (response.ok) {
         setMessage({
           type: "success",
-          text: "AI configuration saved successfully",
+          text: "Review settings saved successfully",
         });
         loadConfigurations();
       } else {
-        const error = await response.json();
+        const errorResponse = await response.json();
+        const errorMessage =
+          errorResponse.error?.message ||
+          errorResponse.message ||
+          "Failed to save review settings";
         setMessage({
           type: "error",
-          text: error.message || "Failed to save configuration",
+          text: String(errorMessage),
         });
       }
     } catch {
-      setMessage({ type: "error", text: "Failed to save configuration" });
+      setMessage({ type: "error", text: "Failed to save review settings" });
     } finally {
       setLoading(false);
     }
@@ -208,12 +282,15 @@ export const Settings: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`/api/ai/test/${provider}`, {
+      const response = await fetch(`/api/ai/test`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ api_key: apiKey }),
+        body: JSON.stringify({
+          provider: provider,
+          api_key: apiKey,
+        }),
       });
 
       const result = await response.json();
@@ -224,12 +301,17 @@ export const Settings: React.FC = () => {
           text: `${provider} connection successful`,
         });
       } else {
+        const errorMessage =
+          result.error?.message ||
+          result.message ||
+          `${provider} connection failed`;
         setMessage({
           type: "error",
-          text: result.message || `${provider} connection failed`,
+          text: String(errorMessage),
         });
       }
-    } catch {
+    } catch (error) {
+      console.error(`Test ${provider} connection error:`, error);
       setMessage({
         type: "error",
         text: `Failed to test ${provider} connection`,
@@ -269,10 +351,14 @@ export const Settings: React.FC = () => {
         });
         loadConfigurations();
       } else {
-        const error = await response.json();
+        const errorResponse = await response.json();
+        const errorMessage =
+          errorResponse.error?.message ||
+          errorResponse.message ||
+          "Failed to update AI configuration";
         setMessage({
           type: "error",
-          text: error.message || "Failed to update AI configuration",
+          text: String(errorMessage),
         });
       }
     } catch {
@@ -316,7 +402,9 @@ export const Settings: React.FC = () => {
                   message.type === "success" ? "text-green-800" : "text-red-800"
                 }`}
               >
-                {message.text}
+                {typeof message.text === "string"
+                  ? message.text
+                  : String(message.text)}
               </p>
             </div>
           </div>
@@ -437,7 +525,7 @@ export const Settings: React.FC = () => {
         )}
 
         {activeTab === "ai" && (
-          <form onSubmit={saveAIConfig} className="space-y-6">
+          <form onSubmit={saveAPIKeysConfig} className="space-y-6">
             <div>
               <h3 className="text-lg font-medium text-gray-900 mb-4">
                 AI Provider Configuration
@@ -455,6 +543,7 @@ export const Settings: React.FC = () => {
                       type="password"
                       id="openai_api_key"
                       name="openai_api_key"
+                      defaultValue={aiConfig.openai_api_key || ""}
                       placeholder={aiConfig.openai_api_key ? "***" : "sk-..."}
                       className="flex-1 input rounded-r-none"
                     />
@@ -483,6 +572,7 @@ export const Settings: React.FC = () => {
                       type="password"
                       id="anthropic_api_key"
                       name="anthropic_api_key"
+                      defaultValue={aiConfig.anthropic_api_key || ""}
                       placeholder={
                         aiConfig.anthropic_api_key ? "***" : "sk-ant-..."
                       }
@@ -512,7 +602,7 @@ export const Settings: React.FC = () => {
         )}
 
         {activeTab === "review" && (
-          <form onSubmit={saveAIConfig} className="space-y-6">
+          <form onSubmit={saveReviewConfig} className="space-y-6">
             <div>
               <h3 className="text-lg font-medium text-gray-900 mb-4">
                 Review Settings
