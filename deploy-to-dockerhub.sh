@@ -3,7 +3,7 @@
 # Docker Hub Deployment Script for GitLab PR AI Reviewer
 # Replace 'yourusername' with your actual Docker Hub username
 
-DOCKER_USERNAME="yourusername"
+DOCKER_USERNAME="petarnenovpetrov"
 IMAGE_NAME="gitlab-pr-ai-reviewer"
 VERSION="1.0.0"
 
