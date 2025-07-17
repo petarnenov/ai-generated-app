@@ -1,0 +1,467 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans text-gray-900 bg-gray-50;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+  }
+
+  .btn-secondary {
+    @apply btn bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500;
+  }
+
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+  }
+
+  .card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6;
+  }
+
+  .input {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+  }
+
+  .textarea {
+    @apply input resize-none;
+  }
+
+  .select {
+    @apply input pr-10 bg-white cursor-pointer;
+  }
+
+  .badge {
+    @apply px-2 py-1 text-xs font-medium rounded-full;
+  }
+
+  .badge-success {
+    @apply badge bg-green-100 text-green-800;
+  }
+
+  .badge-warning {
+    @apply badge bg-yellow-100 text-yellow-800;
+  }
+
+  .badge-error {
+    @apply badge bg-red-100 text-red-800;
+  }
+
+  .badge-info {
+    @apply badge bg-blue-100 text-blue-800;
+  }
+
+  /* GitLab-style merge request components */
+  .gitlab-mr-layout {
+    @apply max-w-6xl mx-auto space-y-6;
+  }
+
+  .gitlab-mr-header-section {
+    @apply bg-white border border-gray-200 rounded-lg shadow-sm;
+  }
+
+  .gitlab-mr-breadcrumb {
+    @apply px-6 py-3 border-b border-gray-200 bg-gray-50 text-sm text-gray-600;
+  }
+
+  .gitlab-breadcrumb-item {
+    @apply font-medium;
+  }
+
+  .gitlab-breadcrumb-separator {
+    @apply mx-2 text-gray-400;
+  }
+
+  .gitlab-mr-header-content {
+    @apply px-6 py-4;
+  }
+
+  .gitlab-mr-header-main {
+    @apply flex items-start justify-between;
+  }
+
+  .gitlab-mr-title-section {
+    @apply flex-1;
+  }
+
+  .gitlab-mr-main-title {
+    @apply text-2xl font-bold text-gray-900 mb-2;
+  }
+
+  .gitlab-mr-subtitle {
+    @apply flex items-center space-x-2 text-sm text-gray-600 mb-2;
+  }
+
+  .gitlab-mr-branch {
+    @apply px-2 py-1 bg-blue-50 text-blue-800 rounded font-mono text-xs;
+  }
+
+  .gitlab-mr-arrow {
+    @apply text-gray-400 font-bold;
+  }
+
+  .gitlab-mr-metadata {
+    @apply flex items-center space-x-4 text-sm text-gray-500;
+  }
+
+  .gitlab-mr-author {
+    @apply text-gray-700;
+  }
+
+  .gitlab-mr-date {
+    @apply text-gray-500;
+  }
+
+  .gitlab-mr-header-actions {
+    @apply flex items-center space-x-3;
+  }
+
+  .gitlab-mr-status {
+    @apply px-3 py-1 text-sm font-medium rounded-full;
+  }
+
+  .gitlab-status-open {
+    @apply bg-green-100 text-green-800 border border-green-200;
+  }
+
+  .gitlab-status-merged {
+    @apply bg-blue-100 text-blue-800 border border-blue-200;
+  }
+
+  .gitlab-status-closed {
+    @apply bg-red-100 text-red-800 border border-red-200;
+  }
+
+  .gitlab-external-link {
+    @apply flex items-center space-x-1 text-sm text-gray-600 hover:text-blue-600 transition-colors;
+  }
+
+  .gitlab-mr-description {
+    @apply px-6 py-4 border-t border-gray-200 bg-gray-50;
+  }
+
+  .gitlab-description-text {
+    @apply text-sm text-gray-700 whitespace-pre-wrap;
+  }
+
+  .gitlab-alert {
+    @apply border rounded-lg p-4;
+  }
+
+  .gitlab-alert-danger {
+    @apply bg-red-50 border-red-200;
+  }
+
+  .gitlab-alert-icon {
+    @apply flex-shrink-0 text-red-400;
+  }
+
+  .gitlab-alert-content {
+    @apply ml-3;
+  }
+
+  .gitlab-alert-title {
+    @apply text-sm font-medium text-red-800;
+  }
+
+  .gitlab-alert-message {
+    @apply mt-1 text-sm text-red-700;
+  }
+
+  .gitlab-actions-bar {
+    @apply bg-white border border-gray-200 rounded-lg shadow-sm p-4;
+  }
+
+  .gitlab-actions-group {
+    @apply flex space-x-3;
+  }
+
+  .gitlab-btn {
+    @apply px-4 py-2 text-sm font-medium rounded-lg border transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center space-x-2;
+  }
+
+  .gitlab-btn-primary {
+    @apply bg-blue-600 text-white border-blue-600 hover:bg-blue-700 focus:ring-blue-500;
+  }
+
+  .gitlab-btn-secondary {
+    @apply bg-white text-gray-700 border-gray-300 hover:bg-gray-50 focus:ring-gray-500;
+  }
+
+  .gitlab-btn:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  .gitlab-btn-spinner {
+    @apply animate-spin rounded-full h-4 w-4 border-b-2 border-current;
+  }
+
+  .gitlab-mr-container {
+    @apply bg-white rounded-lg border border-gray-200 shadow-sm;
+  }
+
+  .gitlab-mr-header {
+    @apply border-b border-gray-200 px-6 py-4;
+  }
+
+  .gitlab-mr-title {
+    @apply text-lg font-semibold text-gray-900 mb-3;
+  }
+
+  .gitlab-mr-tabs {
+    @apply flex space-x-1;
+  }
+
+  .gitlab-tab {
+    @apply px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none;
+  }
+
+  .gitlab-tab.active {
+    @apply bg-blue-50 text-blue-700 border border-blue-200;
+  }
+
+  .gitlab-tab-text {
+    @apply mr-2;
+  }
+
+  .gitlab-tab-count {
+    @apply bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-semibold;
+  }
+
+  .gitlab-empty-state {
+    @apply text-center py-16 px-6;
+  }
+
+  .gitlab-empty-icon {
+    @apply mx-auto h-16 w-16 text-gray-400 mb-4;
+  }
+
+  .gitlab-empty-title {
+    @apply text-lg font-medium text-gray-900 mb-2;
+  }
+
+  .gitlab-empty-description {
+    @apply text-sm text-gray-600;
+  }
+
+  .gitlab-reviews-list {
+    @apply divide-y divide-gray-200;
+  }
+
+  .gitlab-review-card {
+    @apply px-6 py-4;
+  }
+
+  .gitlab-review-header {
+    @apply flex items-start space-x-3 mb-4;
+  }
+
+  .gitlab-review-avatar {
+    @apply flex-shrink-0;
+  }
+
+  .gitlab-ai-avatar {
+    @apply w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold;
+  }
+
+  .gitlab-review-meta {
+    @apply flex-1 min-w-0;
+  }
+
+  .gitlab-review-author {
+    @apply flex items-center space-x-2 text-sm font-medium text-gray-900;
+  }
+
+  .gitlab-review-model {
+    @apply text-gray-600 font-normal;
+  }
+
+  .gitlab-review-time {
+    @apply text-xs text-gray-500 mt-1;
+  }
+
+  .gitlab-review-type {
+    @apply text-sm text-blue-600 font-medium mt-1;
+  }
+
+  .gitlab-review-badges {
+    @apply flex space-x-2 flex-shrink-0;
+  }
+
+  .gitlab-badge {
+    @apply px-2 py-1 text-xs font-medium rounded-full;
+  }
+
+  .gitlab-badge-success {
+    @apply bg-green-100 text-green-800 border border-green-200;
+  }
+
+  .gitlab-badge-warning {
+    @apply bg-yellow-100 text-yellow-800 border border-yellow-200;
+  }
+
+  .gitlab-badge-danger {
+    @apply bg-red-100 text-red-800 border border-red-200;
+  }
+
+  .gitlab-review-content {
+    @apply mt-4 border border-gray-200 rounded-lg overflow-hidden;
+  }
+
+  .gitlab-review-body {
+    @apply p-4 bg-gray-50;
+  }
+
+  .gitlab-review-text {
+    @apply text-sm text-gray-700 whitespace-pre-wrap leading-relaxed;
+    font-family: "Fira Code", "Monaco", "Consolas", "Ubuntu Mono", monospace;
+    line-height: 1.6;
+  }
+
+  .gitlab-review-comments {
+    @apply mt-6 border-t border-gray-200 pt-4;
+  }
+
+  .gitlab-comments-header {
+    @apply mb-4 pb-2 border-b border-gray-100;
+  }
+
+  .gitlab-comments-title {
+    @apply text-sm font-semibold text-gray-900 flex items-center space-x-2;
+  }
+
+  .gitlab-comments-list {
+    @apply space-y-3;
+  }
+
+  .gitlab-comment-item {
+    @apply flex space-x-3 p-4 bg-white rounded-lg border border-gray-200 hover:border-gray-300 transition-colors;
+  }
+
+  .gitlab-comment-sidebar {
+    @apply flex-shrink-0 pt-1;
+  }
+
+  .gitlab-comment-severity {
+    @apply w-6 h-6 rounded-full flex items-center justify-center text-xs;
+  }
+
+  .gitlab-comment-severity.critical {
+    @apply bg-red-100 text-red-600 border border-red-200;
+  }
+
+  .gitlab-comment-severity.error {
+    @apply bg-red-100 text-red-600 border border-red-200;
+  }
+
+  .gitlab-comment-severity.warning {
+    @apply bg-yellow-100 text-yellow-600 border border-yellow-200;
+  }
+
+  .gitlab-comment-severity.info {
+    @apply bg-blue-100 text-blue-600 border border-blue-200;
+  }
+
+  .gitlab-comment-content {
+    @apply flex-1 min-w-0;
+  }
+
+  .gitlab-comment-header {
+    @apply flex items-center space-x-2 mb-3;
+  }
+
+  .gitlab-comment-title {
+    @apply text-sm font-semibold text-gray-900 flex-1;
+  }
+
+  .gitlab-severity-badge {
+    @apply px-2 py-1 text-xs font-medium rounded-full flex-shrink-0;
+  }
+
+  .gitlab-severity-badge.critical {
+    @apply bg-red-100 text-red-800 border border-red-200;
+  }
+
+  .gitlab-severity-badge.error {
+    @apply bg-red-100 text-red-800 border border-red-200;
+  }
+
+  .gitlab-severity-badge.warning {
+    @apply bg-yellow-100 text-yellow-800 border border-yellow-200;
+  }
+
+  .gitlab-severity-badge.info {
+    @apply bg-blue-100 text-blue-800 border border-blue-200;
+  }
+
+  .gitlab-comment-body {
+    @apply space-y-3;
+  }
+
+  .gitlab-comment-text {
+    @apply text-sm text-gray-700 leading-relaxed;
+  }
+
+  .gitlab-comment-file {
+    @apply text-xs text-gray-500 flex items-center space-x-1;
+  }
+
+  .gitlab-file-path {
+    @apply bg-gray-100 text-gray-700 px-2 py-1 rounded font-mono border;
+  }
+
+  .gitlab-line-number {
+    @apply bg-blue-100 text-blue-700 px-2 py-1 rounded font-mono text-xs border;
+  }
+
+  .gitlab-code-block {
+    @apply border border-red-300 rounded-lg overflow-hidden bg-red-50;
+  }
+
+  .gitlab-code-header {
+    @apply bg-red-100 px-3 py-2 border-b border-red-300 flex items-center justify-between;
+  }
+
+  .gitlab-code-label {
+    @apply text-xs font-semibold text-red-700 uppercase tracking-wide;
+  }
+
+  .gitlab-code-content {
+    @apply p-4 text-sm text-red-800 overflow-x-auto;
+    font-family: "Fira Code", "Monaco", "Consolas", "Ubuntu Mono", monospace;
+    background: linear-gradient(to bottom, #fef2f2, #fee2e2);
+    line-height: 1.5;
+  }
+
+  .gitlab-suggestion-block {
+    @apply border border-green-300 rounded-lg overflow-hidden bg-green-50;
+  }
+
+  .gitlab-suggestion-header {
+    @apply bg-green-100 px-3 py-2 border-b border-green-300 flex items-center space-x-2;
+  }
+
+  .gitlab-suggestion-label {
+    @apply text-xs font-semibold text-green-700 uppercase tracking-wide;
+  }
+
+  .gitlab-suggestion-content {
+    @apply p-4 text-sm text-green-800 overflow-x-auto;
+    font-family: "Fira Code", "Monaco", "Consolas", "Ubuntu Mono", monospace;
+    background: linear-gradient(to bottom, #f0fdf4, #dcfce7);
+    line-height: 1.5;
+  }
+}
