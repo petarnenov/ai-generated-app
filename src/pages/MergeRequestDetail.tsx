@@ -221,20 +221,6 @@ export const MergeRequestDetail: React.FC = () => {
     }
   };
 
-  const getSeverityBadge = (severity: string) => {
-    switch (severity) {
-      case "critical":
-      case "error":
-        return "badge-error";
-      case "warning":
-        return "badge-warning";
-      case "info":
-        return "badge-info";
-      default:
-        return "badge-info";
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
