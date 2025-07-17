@@ -1,5 +1,7 @@
 {
 	"version": 2,
+	"buildCommand": "npm run vercel-build",
+	"installCommand": "npm ci --no-optional --legacy-peer-deps",
 	"builds": [
 		{
 			"src": "api/index.ts",
@@ -22,7 +24,5 @@
 			"src": "/(.*)",
 			"dest": "/index.html"
 		}
-	],
-	"installCommand": "npm ci --no-optional --legacy-peer-deps",
-	"buildCommand": "npm run vercel-build"
+	]
 }

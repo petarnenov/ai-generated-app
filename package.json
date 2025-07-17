@@ -7,13 +7,13 @@
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
     "dev:frontend": "vite",
     "dev:backend": "tsx watch server/index.ts",
-    "build": "npm run build:frontend",
+    "build": "npm run vercel-build",
     "build:frontend": "tsc -b && vite build",
     "build:backend": "tsc --project tsconfig.server.json",
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "node dist/server/index.js",
-    "vercel-build": "npm run build:frontend",
+    "vercel-build": "tsc -b && vite build --mode production",
     "migrate": "tsx scripts/migrate.ts"
   },
   "dependencies": {
