@@ -4,9 +4,6 @@ node_modules
 .env.local
 .env.development
 database.sqlite
-server/
 public/
 *.md
 eslint.config.js
-postcss.config.js
-tailwind.config.js
