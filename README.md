@@ -1,6 +1,6 @@
 # GitLab PR AI Reviewer
 
-A powerful Node.js/React application that provides AI-powered code reviews for GitLab merge requests. This application integrates with GitLab's API and various AI providers (OpenAI, Anthropic) to automatically analyze code changes and provide intelligent feedback.
+A powerful Java/React application that provides AI-powered code reviews for GitLab merge requests. This application integrates with GitLab's API and various AI providers (OpenAI, Anthropic) to automatically analyze code changes and provide intelligent feedback.
 
 ## Features
 
@@ -31,17 +31,16 @@ A powerful Node.js/React application that provides AI-powered code reviews for G
 ## Tech Stack
 
 ### Frontend
-- **React 19** with TypeScript
-- **Vite** for fast development and building
+- **React** with JavaScript
+- **Redux** for state management
+- **Zustand** for lightweight state management
 - **Tailwind CSS** for beautiful, responsive UI
 - **React Router** for navigation
 - **Lucide React** for icons
-- **Headless UI** for accessible components
 
 ### Backend
-- **Node.js** with Express
-- **TypeScript** for type safety
-- **SQLite** for data storage
+- **Java** with Apache Tomcat
+- **Oracle Database** for data storage
 - **GitLab API** integration
 - **OpenAI & Anthropic** API integration
 
@@ -125,7 +124,7 @@ gitlab-pr-ai-reviewer/
 │   ├── components/      # Reusable UI components
 │   ├── pages/          # Page components
 │   └── ...
-├── server/             # Backend Node.js application
+├── server/             # Backend Java application
 │   ├── routes/         # API route handlers
 │   ├── database/       # Database initialization
 │   └── middleware/     # Express middleware

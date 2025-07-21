@@ -80,7 +80,7 @@ class SQLiteWrapper implements DatabaseInterface {
 
 // Create database instance based on environment
 export const createDatabase = (): DatabaseInterface => {
-  if (process.env.DATABASE_URL && process.env.NODE_ENV === 'production') {
+  if (process.env.DATABASE_URL) {
     return new PostgreSQLWrapper(process.env.DATABASE_URL);
   } else {
     const dbPath = join(process.cwd(), 'database.sqlite');
@@ -100,7 +100,7 @@ const convertSqlToPostgreSQL = (sql: string): string => {
 };
 
 export const initDatabase = async (): Promise<void> => {
-  const isPostgreSQL = process.env.DATABASE_URL && process.env.NODE_ENV === 'production';
+  const isPostgreSQL = !!process.env.DATABASE_URL;
   
   const createProjectsTable = `
     CREATE TABLE IF NOT EXISTS projects (
