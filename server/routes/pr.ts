@@ -40,8 +40,42 @@ const router = express.Router();
 
 // Get merge requests
 router.get('/', asyncHandler(async (req, res) => {
-  const { project_id, state, page = 1, per_page = 20 } = req.query;
+  const { project_id, state, author, page = 1, per_page = 1000 } = req.query;
   
+  // First, get the total count
+  let countQuery = `
+    SELECT COUNT(*) as total
+    FROM merge_requests mr
+    LEFT JOIN projects p ON mr.project_id = p.id
+    WHERE 1=1
+  `;
+  
+  const countParams: any[] = [];
+  
+  if (project_id) {
+    countQuery += ' AND mr.project_id = ?';
+    countParams.push(project_id);
+  }
+  
+  if (state) {
+    countQuery += ' AND mr.state = ?';
+    countParams.push(state);
+  }
+  
+  if (author) {
+    countQuery += ' AND mr.author_username = ?';
+    countParams.push(author);
+  }
+  
+  // Get the total count
+  const totalCount = await new Promise<number>((resolve, reject) => {
+    db.get(countQuery, countParams, (err, row: any) => {
+      if (err) return reject(err);
+      resolve(row.total);
+    });
+  });
+  
+  // Now get the paginated results
   let query = `
     SELECT mr.*, p.name as project_name, p.namespace, p.web_url as project_url
     FROM merge_requests mr
@@ -61,15 +95,53 @@ router.get('/', asyncHandler(async (req, res) => {
     params.push(state);
   }
   
+  if (author) {
+    query += ' AND mr.author_username = ?';
+    params.push(author);
+  }
+  
   query += ' ORDER BY mr.updated_at DESC LIMIT ? OFFSET ?';
-  params.push(per_page, (parseInt(page.toString()) - 1) * parseInt(per_page.toString()));
+  const pageNum = parseInt(page.toString());
+  const perPageNum = parseInt(per_page.toString());
+  params.push(perPageNum, (pageNum - 1) * perPageNum);
   
   db.all(query, params, (err, rows) => {
     if (err) {
       throw createError(500, 'Failed to fetch merge requests');
     }
-    res.json({ merge_requests: rows });
+    
+    const totalPages = Math.ceil(totalCount / perPageNum);
+    
+    res.json({ 
+      merge_requests: rows,
+      pagination: {
+        page: pageNum,
+        per_page: perPageNum,
+        total: totalCount,
+        total_pages: totalPages,
+        has_next: pageNum < totalPages,
+        has_prev: pageNum > 1
+      }
+    });
   });
+}));
+
+// Get authors list
+router.get('/authors', asyncHandler(async (req, res) => {
+  db.all(
+    `SELECT DISTINCT author_username 
+     FROM merge_requests 
+     WHERE author_username IS NOT NULL 
+     ORDER BY author_username`,
+    [],
+    (err, rows) => {
+      if (err) {
+        throw createError(500, 'Failed to fetch authors');
+      }
+      const authors = rows.map((row: any) => row.author_username);
+      res.json({ authors });
+    }
+  );
 }));
 
 // Get merge request details

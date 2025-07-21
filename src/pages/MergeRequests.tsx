@@ -32,11 +32,73 @@ interface MergeRequestStats {
   closed_mrs: number;
 }
 
+interface PaginationInfo {
+  page: number;
+  per_page: number;
+  total: number;
+  total_pages: number;
+  has_next: boolean;
+  has_prev: boolean;
+}
+
 export const MergeRequests: React.FC = () => {
   const [mergeRequests, setMergeRequests] = useState<MergeRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedState, setSelectedState] = useState<string>("opened");
+  const [selectedAuthor, setSelectedAuthor] = useState<string>("all");
+  const [authors, setAuthors] = useState<string[]>([]);
   const [stats, setStats] = useState<MergeRequestStats | null>(null);
+  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
+  const [filtersLoaded, setFiltersLoaded] = useState(false);
+  const [showRestoreIndicator, setShowRestoreIndicator] = useState(false);
+
+  // Load persisted filters on component mount
+  React.useEffect(() => {
+    try {
+      const savedState = localStorage.getItem("mergeRequestFilters");
+      if (savedState) {
+        const { state, author } = JSON.parse(savedState);
+        let hasRestoredFilters = false;
+
+        if (state && state !== "all") {
+          setSelectedState(state);
+          hasRestoredFilters = true;
+        }
+        if (author && author !== "all") {
+          setSelectedAuthor(author);
+          hasRestoredFilters = true;
+        }
+
+        if (hasRestoredFilters) {
+          setShowRestoreIndicator(true);
+          // Hide the indicator after 3 seconds
+          setTimeout(() => setShowRestoreIndicator(false), 3000);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load saved filters:", error);
+    } finally {
+      setFiltersLoaded(true);
+    }
+  }, []);
+
+  // Save filters to localStorage whenever they change
+  React.useEffect(() => {
+    if (!filtersLoaded) return; // Don't save initial state
+
+    try {
+      const filtersToSave = {
+        state: selectedState,
+        author: selectedAuthor,
+      };
+      localStorage.setItem(
+        "mergeRequestFilters",
+        JSON.stringify(filtersToSave)
+      );
+    } catch (error) {
+      console.error("Failed to save filters:", error);
+    }
+  }, [selectedState, selectedAuthor, filtersLoaded]);
 
   const loadStats = async () => {
     try {
@@ -50,6 +112,18 @@ export const MergeRequests: React.FC = () => {
     }
   };
 
+  const loadAuthors = async () => {
+    try {
+      const response = await fetch("/api/pr/authors");
+      if (response.ok) {
+        const data = await response.json();
+        setAuthors(data.authors || []);
+      }
+    } catch (error) {
+      console.error("Failed to load authors:", error);
+    }
+  };
+
   const loadMergeRequests = useCallback(async () => {
     try {
       setLoading(true);
@@ -57,24 +131,31 @@ export const MergeRequests: React.FC = () => {
       if (selectedState !== "all") {
         params.append("state", selectedState);
       }
+      if (selectedAuthor !== "all") {
+        params.append("author", selectedAuthor);
+      }
 
       const response = await fetch(`/api/pr?${params}`);
 
       if (response.ok) {
         const data = await response.json();
         setMergeRequests(data.merge_requests || []);
+        setPagination(data.pagination || null);
       }
     } catch (error) {
       console.error("Failed to load merge requests:", error);
     } finally {
       setLoading(false);
     }
-  }, [selectedState]);
+  }, [selectedState, selectedAuthor]);
 
   useEffect(() => {
+    if (!filtersLoaded) return; // Wait for filters to be loaded first
+
     loadMergeRequests();
     loadStats();
-  }, [selectedState, loadMergeRequests]);
+    loadAuthors();
+  }, [selectedState, selectedAuthor, loadMergeRequests, filtersLoaded]);
 
   const getStatusIcon = (state: string) => {
     switch (state) {
@@ -129,7 +210,7 @@ export const MergeRequests: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-4 flex-wrap">
         <select
           value={selectedState}
           onChange={(e) => setSelectedState(e.target.value)}
@@ -141,15 +222,73 @@ export const MergeRequests: React.FC = () => {
           <option value="closed">Closed</option>
         </select>
 
+        <select
+          value={selectedAuthor}
+          onChange={(e) => setSelectedAuthor(e.target.value)}
+          className="select max-w-xs"
+        >
+          <option value="all">All Authors</option>
+          {authors.map((author) => (
+            <option key={author} value={author}>
+              {author}
+            </option>
+          ))}
+        </select>
+
+        {/* Clear filters button */}
+        {(selectedState !== "all" || selectedAuthor !== "all") && (
+          <button
+            onClick={() => {
+              setSelectedState("all");
+              setSelectedAuthor("all");
+              // Clear saved filters from localStorage
+              try {
+                localStorage.removeItem("mergeRequestFilters");
+              } catch (error) {
+                console.error("Failed to clear saved filters:", error);
+              }
+            }}
+            className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md hover:bg-gray-50"
+          >
+            Clear Filters
+          </button>
+        )}
+
+        {/* Restore confirmation - shows briefly when filters are restored */}
+        {showRestoreIndicator && (
+          <div className="text-xs text-green-600 opacity-70 animate-pulse">
+            📁 Filters restored
+          </div>
+        )}
+
         {/* Counter Display */}
         <div className="flex items-center space-x-2 text-sm text-gray-600">
           <span className="font-medium">Total:</span>
           <span className="px-2 py-1 bg-gray-100 rounded-full text-gray-800 font-semibold">
-            {getCountForState(selectedState)}
+            {pagination?.total || getCountForState(selectedState)}
           </span>
           <span>
             {selectedState === "all" ? "requests" : `${selectedState} requests`}
           </span>
+          {pagination && pagination.total > pagination.per_page && (
+            <span className="text-xs text-gray-500">
+              (showing {mergeRequests.length} of {pagination.total})
+            </span>
+          )}
+        </div>
+
+        {/* Filter indicators */}
+        <div className="flex items-center space-x-2">
+          {selectedState !== "all" && (
+            <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+              State: {selectedState}
+            </span>
+          )}
+          {selectedAuthor !== "all" && (
+            <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+              Author: {selectedAuthor}
+            </span>
+          )}
         </div>
       </div>
 
